@@ -1,0 +1,16 @@
+import { mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { makeApp } from "./server.js";
+import { Store } from "./store.js";
+
+// Standalone entrypoint. Tests use makeApp directly with a temp dir.
+
+const port = Number(process.env.PORT ?? 8092);
+const dataDir = process.env.DATA_DIR ?? "/opt/iolit-api";
+mkdirSync(dataDir, { recursive: true });
+
+const store = new Store(dataDir);
+makeApp(store).listen(port, () => {
+  console.log(`iolit-api listening on :${port} (${store.count()} batches)`);
+});
