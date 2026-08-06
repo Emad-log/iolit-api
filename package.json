@@ -1,0 +1,19 @@
+{
+  "name": "iolit-api",
+  "version": "0.1.0",
+  "description": "Iolit marketplace API - receives approved session-metadata batches",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/test/validate.test.js dist/test/api.test.js",
+    "start": "node dist/main.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
+  }
+}
