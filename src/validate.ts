@@ -34,7 +34,7 @@ function parseSession(body: unknown): { ok: true } | { ok: false; error: string 
   if (typeof body !== "object" || body === null) return err("session must be an object");
   const s = body as Record<string, unknown>;
 
-  if (s.tool !== "claude" && s.tool !== "cursor") return err("session tool must be claude or cursor");
+  if (s.tool !== "claude" && s.tool !== "cursor" && s.tool !== "codex") return err("session tool must be claude, cursor, or codex");
   if (typeof s.model !== "string") return err("session model required");
   if (typeof s.startedAt !== "string") return err("session startedAt required");
   if (typeof s.durationSec !== "number") return err("session durationSec required");

@@ -2,7 +2,7 @@
 // If a field is not here, the API rejects it.
 
 export interface SessionMeta {
-  tool: "claude" | "cursor";
+  tool: "claude" | "cursor" | "codex";
   model: string;
   startedAt: string;
   durationSec: number;
