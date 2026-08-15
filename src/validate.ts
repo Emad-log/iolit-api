@@ -1,10 +1,10 @@
 // Validates incoming body against the batch schema. Rejects unknown fields.
 
 import type { BatchPayload } from "./types.js";
-import { SESSION_KEYS } from "./types.js";
+import { BATCH_KEYS, SESSION_KEYS } from "./types.js";
 
-const BATCH_KEYS = ["version", "app", "batchId", "createdAt", "sessions"];
 const TOOLS = new Set(["claude", "cursor", "codex", "copilot"]);
+const TIERS = new Set(["pulse", "trace", "raw"]);
 
 export function parseBatch(body: unknown): { ok: true; value: BatchPayload } | { ok: false; error: string } {
   if (typeof body !== "object" || body === null) return err("body must be an object");
@@ -14,20 +14,21 @@ export function parseBatch(body: unknown): { ok: true; value: BatchPayload } | {
   if (b.app !== "iolit") return err("app must be iolit");
   if (typeof b.batchId !== "string" || b.batchId.length === 0) return err("batchId required");
   if (typeof b.createdAt !== "string") return err("createdAt required");
+  if (typeof b.shareTier !== "string" || !TIERS.has(b.shareTier)) return err("shareTier must be pulse, trace, or raw");
   if (!Array.isArray(b.sessions) || b.sessions.length === 0) return err("sessions must be a non-empty array");
 
-  const extra = Object.keys(b).filter((k) => !BATCH_KEYS.includes(k));
+  const extra = Object.keys(b).filter((k) => !(BATCH_KEYS as readonly string[]).includes(k));
   if (extra.length > 0) return err(`unknown field: ${extra[0]}`);
 
   for (const s of b.sessions) {
-    const v = parseSession(s);
+    const v = parseSession(s, b.shareTier);
     if (!v.ok) return v;
   }
 
   return { ok: true, value: b as unknown as BatchPayload };
 }
 
-function parseSession(body: unknown): { ok: true } | { ok: false; error: string } {
+function parseSession(body: unknown, batchTier: unknown): { ok: true } | { ok: false; error: string } {
   if (typeof body !== "object" || body === null) return err("session must be an object");
   const s = body as Record<string, unknown>;
 
@@ -73,6 +74,24 @@ function parseSession(body: unknown): { ok: true } | { ok: false; error: string 
   if (!isStringArray(s.langHints)) return err("session langHints must be string array");
   if (!isString(s.permissionMode)) return err("session permissionMode required");
   if (!isStopReasons(s.stopReasons)) return err("session stopReasons invalid");
+  if (typeof s.shareTier !== "string" || !TIERS.has(s.shareTier)) return err("session shareTier invalid");
+  if (s.shareTier !== batchTier) return err("session shareTier must match batch");
+  if (!isToolEvents(s.toolEvents)) return err("session toolEvents invalid");
+  if (!isString(s.userPromptPreview)) return err("session userPromptPreview required");
+  if (!isString(s.assistantPreview)) return err("session assistantPreview required");
+  if (!isString(s.thinkingPreview)) return err("session thinkingPreview required");
+
+  if (s.shareTier === "pulse") {
+    if ((s.toolEvents as unknown[]).length > 0) return err("pulse forbids toolEvents");
+    if (s.userPromptPreview || s.assistantPreview || s.thinkingPreview) {
+      return err("pulse forbids text previews");
+    }
+  }
+  if (s.shareTier === "trace") {
+    if (s.userPromptPreview || s.assistantPreview || s.thinkingPreview) {
+      return err("trace forbids text previews");
+    }
+  }
 
   const extra = Object.keys(s).filter((k) => !(SESSION_KEYS as readonly string[]).includes(k));
   if (extra.length > 0) return err(`session unknown field: ${extra[0]}`);
@@ -108,6 +127,27 @@ function isStopReasons(v: unknown): boolean {
     const t = item as Record<string, unknown>;
     const extra = Object.keys(t).filter((k) => !["reason", "count"].includes(k));
     return extra.length === 0 && typeof t.reason === "string" && isNum(t.count);
+  });
+}
+
+function isToolEvents(v: unknown): boolean {
+  if (!Array.isArray(v)) return false;
+  return v.every((item) => {
+    if (typeof item !== "object" || item === null) return false;
+    const t = item as Record<string, unknown>;
+    const extra = Object.keys(t).filter(
+      (k) => !["name", "error", "exitCode", "argKeys", "inputPreview", "resultPreview"].includes(k),
+    );
+    const exitOk = t.exitCode === null || isNum(t.exitCode);
+    return (
+      extra.length === 0 &&
+      typeof t.name === "string" &&
+      typeof t.error === "boolean" &&
+      exitOk &&
+      isStringArray(t.argKeys) &&
+      typeof t.inputPreview === "string" &&
+      typeof t.resultPreview === "string"
+    );
   });
 }
 

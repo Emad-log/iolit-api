@@ -40,7 +40,7 @@ export function makeApp(store: Store) {
         ...parsed.value,
         status: "received",
         receivedAt: new Date().toISOString(),
-        estEarningsUsd: estimateUsd(parsed.value.sessions),
+        estEarningsUsd: estimateUsd(parsed.value.sessions, parsed.value.shareTier),
       };
       store.add(record);
       json(res, 201, {

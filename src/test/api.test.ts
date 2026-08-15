@@ -53,6 +53,11 @@ const session: SessionMeta = {
   langHints: ["ts"],
   permissionMode: "",
   stopReasons: [{ reason: "end_turn", count: 1 }],
+  shareTier: "pulse",
+  toolEvents: [],
+  userPromptPreview: "",
+  assistantPreview: "",
+  thinkingPreview: "",
 };
 
 const record: BatchRecord = {
@@ -60,6 +65,7 @@ const record: BatchRecord = {
   app: "iolit",
   batchId: "b1",
   createdAt: "2026-08-06T00:00:00Z",
+  shareTier: "pulse",
   sessions: [session],
   status: "received",
   receivedAt: "2026-08-06T00:00:01Z",
@@ -93,7 +99,14 @@ test("POST /v1/batches accepts and returns id + estimate", async () => {
   const res = await fetch(`http://127.0.0.1:${port}/v1/batches`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ version: 1, app: "iolit", batchId: "x1", createdAt: "2026-08-06T00:00:00Z", sessions: [session] }),
+    body: JSON.stringify({
+      version: 1,
+      app: "iolit",
+      batchId: "x1",
+      createdAt: "2026-08-06T00:00:00Z",
+      shareTier: "pulse",
+      sessions: [session],
+    }),
   });
   const body = await res.json();
   assert.equal(res.status, 201);
@@ -114,7 +127,7 @@ test("POST rejects invalid payload with 400", async () => {
   const res = await fetch(`http://127.0.0.1:${port}/v1/batches`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ version: 1, app: "iolit", batchId: "x2", createdAt: "t", sessions: [] }),
+    body: JSON.stringify({ version: 1, app: "iolit", batchId: "x2", createdAt: "t", shareTier: "pulse", sessions: [] }),
   });
   assert.equal(res.status, 400);
 
