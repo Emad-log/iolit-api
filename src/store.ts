@@ -1,5 +1,4 @@
-// JSONL batch store. Append-only, one record per line, indexed by id.
-// Simple by design: read the file for lookups, no deps.
+// Append-only JSONL store. One record per line.
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
