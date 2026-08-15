@@ -5,8 +5,8 @@ The Iolit marketplace API. Receives approved session-metadata batches from the
 
 ## Endpoints
 
-- `POST /v1/batches` — submit a batch (schema must match the client exactly)
-- `GET /v1/batches/:id` — status lookup
+- `POST /v1/batches`: submit a batch (schema must match the client exactly)
+- `GET /v1/batches/:id`: status lookup
 - `GET /health`
 
 ## What the API does with a batch

@@ -1,19 +1,49 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseBatch } from "../validate.js";
-import type { BatchPayload, SessionMeta } from "../types.js";
+import type { SessionMeta } from "../types.js";
 
 const session: SessionMeta = {
   tool: "claude",
   model: "claude-opus-4-6",
+  modelsUsed: ["claude-opus-4-6"],
   startedAt: "2026-08-06T00:00:00Z",
+  endedAt: "2026-08-06T00:02:00Z",
   durationSec: 120,
+  hourOfDay: 0,
+  dayOfWeek: 4,
+  cliVersion: "2.1.77",
+  userTurns: 1,
+  assistantTurns: 2,
   tokensIn: 1000,
   tokensOut: 500,
+  cacheCreationTokens: 200,
+  cacheReadTokens: 800,
+  cacheHitRatio: 0.8,
+  webSearchRequests: 0,
+  webFetchRequests: 0,
+  serviceTier: "standard",
+  speed: "standard",
   taskType: "code",
   success: true,
+  lastStopReason: "end_turn",
+  apiErrorCount: 0,
+  toolErrorCount: 0,
+  toolCallCount: 1,
   toolsUsed: ["Read"],
-  hourOfDay: 14,
+  toolCalls: [{ name: "Read", count: 1, errors: 0 }],
+  toolSequence: ["Read"],
+  thinkingBlocks: 0,
+  thinkingChars: 0,
+  textCharsOut: 40,
+  userCharsIn: 12,
+  isSubagent: false,
+  cwdHash: "abc123abc123",
+  hasGit: true,
+  branchClass: "main",
+  langHints: ["ts"],
+  permissionMode: "",
+  stopReasons: [{ reason: "end_turn", count: 1 }],
 };
 
 function batch(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -59,6 +89,7 @@ test("rejects malformed session types", () => {
   assert.equal(r.ok, false);
 });
 
-test("rejects bad json", () => {
-  assert.equal((batch() as unknown as BatchPayload).app, "iolit");
+test("accepts copilot as a tool", () => {
+  const r = parseBatch(batch({ sessions: [{ ...session, tool: "copilot" }] }));
+  assert.equal(r.ok, true);
 });
