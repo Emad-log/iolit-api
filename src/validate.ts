@@ -3,7 +3,7 @@
 import type { BatchPayload } from "./types.js";
 import { BATCH_KEYS, SESSION_KEYS } from "./types.js";
 
-const TOOLS = new Set(["claude", "cursor", "codex", "copilot"]);
+const TOOLS = new Set(["claude", "cursor", "codex"]);
 const TIERS = new Set(["pulse", "trace", "raw"]);
 
 export function parseBatch(body: unknown): { ok: true; value: BatchPayload } | { ok: false; error: string } {
@@ -33,7 +33,7 @@ function parseSession(body: unknown, batchTier: unknown): { ok: true } | { ok: f
   const s = body as Record<string, unknown>;
 
   if (typeof s.tool !== "string" || !TOOLS.has(s.tool)) {
-    return err("session tool must be claude, cursor, codex, or copilot");
+    return err("session tool must be claude, cursor, or codex");
   }
   if (!isString(s.model)) return err("session model required");
   if (!isStringArray(s.modelsUsed)) return err("session modelsUsed must be string array");

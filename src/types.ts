@@ -1,6 +1,6 @@
 // Mirrors iolit-client/src/types.ts. API rejects anything not in this schema.
 
-export type ToolName = "claude" | "cursor" | "codex" | "copilot";
+export type ToolName = "claude" | "cursor" | "codex";
 export type ShareTier = "pulse" | "trace" | "raw";
 
 export interface ToolCallStat {
