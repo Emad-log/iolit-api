@@ -1,16 +1,59 @@
 // Mirrors iolit-client/src/types.ts. API rejects anything not in this schema.
 
+export type ToolName = "claude" | "cursor" | "codex" | "copilot";
+
+export interface ToolCallStat {
+  name: string;
+  count: number;
+  errors: number;
+}
+
+export interface StopReasonStat {
+  reason: string;
+  count: number;
+}
+
 export interface SessionMeta {
-  tool: "claude" | "cursor" | "codex";
+  tool: ToolName;
   model: string;
+  modelsUsed: string[];
   startedAt: string;
+  endedAt: string;
   durationSec: number;
+  hourOfDay: number;
+  dayOfWeek: number;
+  cliVersion: string;
+  userTurns: number;
+  assistantTurns: number;
   tokensIn: number;
   tokensOut: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+  cacheHitRatio: number;
+  webSearchRequests: number;
+  webFetchRequests: number;
+  serviceTier: string;
+  speed: string;
   taskType: string;
   success: boolean;
+  lastStopReason: string;
+  apiErrorCount: number;
+  toolErrorCount: number;
+  toolCallCount: number;
   toolsUsed: string[];
-  hourOfDay: number;
+  toolCalls: ToolCallStat[];
+  toolSequence: string[];
+  thinkingBlocks: number;
+  thinkingChars: number;
+  textCharsOut: number;
+  userCharsIn: number;
+  isSubagent: boolean;
+  cwdHash: string;
+  hasGit: boolean;
+  branchClass: string;
+  langHints: string[];
+  permissionMode: string;
+  stopReasons: StopReasonStat[];
 }
 
 export interface BatchPayload {
@@ -26,3 +69,16 @@ export interface BatchRecord extends BatchPayload {
   receivedAt: string;
   estEarningsUsd: number;
 }
+
+export const SESSION_KEYS = [
+  "tool", "model", "modelsUsed", "startedAt", "endedAt", "durationSec",
+  "hourOfDay", "dayOfWeek", "cliVersion",
+  "userTurns", "assistantTurns",
+  "tokensIn", "tokensOut", "cacheCreationTokens", "cacheReadTokens", "cacheHitRatio",
+  "webSearchRequests", "webFetchRequests", "serviceTier", "speed",
+  "taskType", "success", "lastStopReason", "apiErrorCount",
+  "toolErrorCount", "toolCallCount", "toolsUsed", "toolCalls", "toolSequence",
+  "thinkingBlocks", "thinkingChars", "textCharsOut", "userCharsIn",
+  "isSubagent", "cwdHash", "hasGit", "branchClass", "langHints",
+  "permissionMode", "stopReasons",
+] as const;
