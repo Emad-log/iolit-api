@@ -1,5 +1,4 @@
-// The API. Three routes: health, submit batch, batch status.
-// Kept as a factory so tests can run it without binding a port.
+// Factory so tests can run without binding a port.
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { Store } from "./store.js";

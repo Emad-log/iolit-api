@@ -1,5 +1,4 @@
-// Earnings estimate. Honest heuristic, clearly labeled an estimate:
-// ~$3 per 1M tokens of session activity. Real pricing comes with real buyers.
+// Estimate: ~$3 per 1M tokens. Real pricing comes with real buyers.
 
 import type { SessionMeta } from "./types.js";
 

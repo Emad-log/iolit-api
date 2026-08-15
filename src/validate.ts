@@ -1,5 +1,4 @@
-// Validates an incoming body against the exact batch schema.
-// Rejects anything extra: unknown fields, wrong types, empty sessions.
+// Validates incoming body against the batch schema. Rejects unknown fields.
 
 import type { BatchPayload, SessionMeta } from "./types.js";
 

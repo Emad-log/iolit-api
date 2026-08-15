@@ -1,5 +1,4 @@
-// Mirrors the client schema (iolit-client/src/types.ts).
-// If a field is not here, the API rejects it.
+// Mirrors iolit-client/src/types.ts. API rejects anything not in this schema.
 
 export interface SessionMeta {
   tool: "claude" | "cursor" | "codex";
