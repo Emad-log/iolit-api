@@ -44,6 +44,11 @@ const session: SessionMeta = {
   langHints: ["ts"],
   permissionMode: "",
   stopReasons: [{ reason: "end_turn", count: 1 }],
+  shareTier: "pulse",
+  toolEvents: [],
+  userPromptPreview: "",
+  assistantPreview: "",
+  thinkingPreview: "",
 };
 
 function batch(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -52,6 +57,7 @@ function batch(overrides: Record<string, unknown> = {}): Record<string, unknown>
     app: "iolit",
     batchId: "abc123",
     createdAt: "2026-08-06T00:00:00Z",
+    shareTier: "pulse",
     sessions: [session],
     ...overrides,
   };
@@ -91,5 +97,29 @@ test("rejects malformed session types", () => {
 
 test("accepts copilot as a tool", () => {
   const r = parseBatch(batch({ sessions: [{ ...session, tool: "copilot" }] }));
+  assert.equal(r.ok, true);
+});
+
+test("rejects pulse batch that still has prompts", () => {
+  const r = parseBatch(batch({ sessions: [{ ...session, userPromptPreview: "hi" }] }));
+  assert.equal(r.ok, false);
+});
+
+test("accepts a trace batch with tool events", () => {
+  const traced: SessionMeta = {
+    ...session,
+    shareTier: "trace",
+    toolEvents: [
+      {
+        name: "Read",
+        error: false,
+        exitCode: null,
+        argKeys: ["file_path"],
+        inputPreview: "file_path=*/app.ts",
+        resultPreview: "ok",
+      },
+    ],
+  };
+  const r = parseBatch(batch({ shareTier: "trace", sessions: [traced] }));
   assert.equal(r.ok, true);
 });
