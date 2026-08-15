@@ -95,8 +95,8 @@ test("rejects malformed session types", () => {
   assert.equal(r.ok, false);
 });
 
-test("accepts copilot as a tool", () => {
-  const r = parseBatch(batch({ sessions: [{ ...session, tool: "copilot" }] }));
+test("accepts cursor as a tool", () => {
+  const r = parseBatch(batch({ sessions: [{ ...session, tool: "cursor" }] }));
   assert.equal(r.ok, true);
 });
 
