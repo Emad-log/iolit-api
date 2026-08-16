@@ -25,6 +25,10 @@ export function makeApp(store: Store) {
 
     if (req.method === "POST" && url.pathname === "/v1/batches") {
       const body = await readBody(req);
+      if (body === null) {
+        json(res, 400, { error: "invalid json" });
+        return;
+      }
       const parsed = parseBatch(body);
       if (!parsed.ok) {
         json(res, 400, { error: parsed.error });
@@ -72,7 +76,7 @@ export function makeApp(store: Store) {
   });
 }
 
-function readBody(req: IncomingMessage): Promise<unknown> {
+function readBody(req: IncomingMessage): Promise<unknown | null> {
   return new Promise((resolve, reject) => {
     let data = "";
     req.on("data", (c) => (data += c));
@@ -80,7 +84,7 @@ function readBody(req: IncomingMessage): Promise<unknown> {
       try {
         resolve(JSON.parse(data));
       } catch {
-        reject(new Error("invalid json"));
+        resolve(null);
       }
     });
     req.on("error", reject);
