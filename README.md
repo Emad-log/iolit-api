@@ -12,9 +12,13 @@ The Iolit marketplace API. Receives approved session-metadata batches from the
 ## What the API does with a batch
 
 1. Validates it against the exact client schema. Unknown fields are rejected.
-2. Stores it as a JSONL record (append-only, indexed by batch id).
-3. Returns an honest earnings estimate (label: estimate, real pricing comes
-   with real buyers).
+2. Verifies provenance: commit SHAs must be well-formed, and any SHA
+   already seen in another batch is flagged as a duplicate (the signature
+   of copied or farmed sessions). Batches with no commits are stored as
+   honestly unverified, not rejected.
+3. Stores it as a JSONL record (append-only, indexed by batch id).
+4. Returns an honest earnings estimate (label: estimate, real pricing comes
+   with real buyers), plus the verification result.
 
 ## Run
 

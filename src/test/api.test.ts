@@ -50,6 +50,7 @@ const session: SessionMeta = {
   cwdHash: "abc123abc123",
   hasGit: true,
   branchClass: "main",
+  provenance: { commits: ["b".repeat(40)] },
   langHints: ["ts"],
   permissionMode: "",
   stopReasons: [{ reason: "end_turn", count: 1 }],
@@ -70,6 +71,7 @@ const record: BatchRecord = {
   status: "received",
   receivedAt: "2026-08-06T00:00:01Z",
   estEarningsUsd: 0.01,
+  verification: { commitsChecked: 1, duplicateCommits: [], verified: true },
 };
 
 test("store persists to disk and reloads", () => {

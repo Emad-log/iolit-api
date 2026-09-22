@@ -71,6 +71,8 @@ function parseSession(body: unknown, batchTier: unknown): { ok: true } | { ok: f
   if (!isString(s.cwdHash)) return err("session cwdHash required");
   if (typeof s.hasGit !== "boolean") return err("session hasGit required");
   if (!isString(s.branchClass)) return err("session branchClass required");
+  const prov = parseProvenance(s.provenance);
+  if (!prov.ok) return prov;
   if (!isStringArray(s.langHints)) return err("session langHints must be string array");
   if (!isString(s.permissionMode)) return err("session permissionMode required");
   if (!isStopReasons(s.stopReasons)) return err("session stopReasons invalid");
@@ -128,6 +130,23 @@ function isStopReasons(v: unknown): boolean {
     const extra = Object.keys(t).filter((k) => !["reason", "count"].includes(k));
     return extra.length === 0 && typeof t.reason === "string" && isNum(t.count);
   });
+}
+
+function parseProvenance(v: unknown): { ok: true } | { ok: false; error: string } {
+  // Optional for backward compatibility with older clients; strict when present.
+  if (v === undefined) return { ok: true };
+  if (typeof v !== "object" || v === null) return err("session provenance must be an object");
+  const p = v as Record<string, unknown>;
+  const extra = Object.keys(p).filter((k) => k !== "commits");
+  if (extra.length > 0) return err(`session provenance unknown field: ${extra[0]}`);
+  if (!Array.isArray(p.commits)) return err("session provenance commits must be an array");
+  if (p.commits.length > 20) return err("session provenance commits capped at 20");
+  for (const c of p.commits) {
+    if (typeof c !== "string" || !/^[0-9a-f]{40}$/.test(c)) {
+      return err("session provenance commits must be 40-char hex SHAs");
+    }
+  }
+  return { ok: true };
 }
 
 function isToolEvents(v: unknown): boolean {

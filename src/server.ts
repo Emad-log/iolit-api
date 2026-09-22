@@ -4,6 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import type { Store } from "./store.js";
 import { parseBatch } from "./validate.js";
 import { estimateUsd } from "./pricing.js";
+import { verifyProvenance } from "./provenance.js";
 import type { BatchRecord } from "./types.js";
 
 export function makeApp(store: Store) {
@@ -45,12 +46,14 @@ export function makeApp(store: Store) {
         status: "received",
         receivedAt: new Date().toISOString(),
         estEarningsUsd: estimateUsd(parsed.value.sessions, parsed.value.shareTier),
+        verification: verifyProvenance(parsed.value, store),
       };
       store.add(record);
       json(res, 201, {
         batchId: record.batchId,
         status: record.status,
         estEarningsUsd: record.estEarningsUsd,
+        verification: record.verification,
       });
       return;
     }
@@ -67,6 +70,7 @@ export function makeApp(store: Store) {
         status: record.status,
         receivedAt: record.receivedAt,
         estEarningsUsd: record.estEarningsUsd,
+        verification: record.verification,
         sessions: record.sessions.length,
       });
       return;
