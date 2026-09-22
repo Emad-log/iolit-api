@@ -39,34 +39,34 @@ function parseSession(body: unknown, batchTier: unknown): { ok: true } | { ok: f
   if (!isStringArray(s.modelsUsed)) return err("session modelsUsed must be string array");
   if (!isString(s.startedAt)) return err("session startedAt required");
   if (!isString(s.endedAt)) return err("session endedAt required");
-  if (!isNum(s.durationSec)) return err("session durationSec required");
-  if (!isNum(s.hourOfDay)) return err("session hourOfDay required");
-  if (!isNum(s.dayOfWeek)) return err("session dayOfWeek required");
+  if (!isNonNeg(s.durationSec)) return err("session durationSec must be a non-negative number");
+  if (!isHourOfDay(s.hourOfDay)) return err("session hourOfDay must be 0-23");
+  if (!isDayOfWeek(s.dayOfWeek)) return err("session dayOfWeek must be 0-6");
   if (!isString(s.cliVersion)) return err("session cliVersion required");
-  if (!isNum(s.userTurns)) return err("session userTurns required");
-  if (!isNum(s.assistantTurns)) return err("session assistantTurns required");
-  if (!isNum(s.tokensIn)) return err("session tokensIn required");
-  if (!isNum(s.tokensOut)) return err("session tokensOut required");
-  if (!isNum(s.cacheCreationTokens)) return err("session cacheCreationTokens required");
-  if (!isNum(s.cacheReadTokens)) return err("session cacheReadTokens required");
-  if (!isNum(s.cacheHitRatio)) return err("session cacheHitRatio required");
-  if (!isNum(s.webSearchRequests)) return err("session webSearchRequests required");
-  if (!isNum(s.webFetchRequests)) return err("session webFetchRequests required");
+  if (!isNonNeg(s.userTurns)) return err("session userTurns must be a non-negative number");
+  if (!isNonNeg(s.assistantTurns)) return err("session assistantTurns must be a non-negative number");
+  if (!isNonNeg(s.tokensIn)) return err("session tokensIn must be a non-negative number");
+  if (!isNonNeg(s.tokensOut)) return err("session tokensOut must be a non-negative number");
+  if (!isNonNeg(s.cacheCreationTokens)) return err("session cacheCreationTokens must be a non-negative number");
+  if (!isNonNeg(s.cacheReadTokens)) return err("session cacheReadTokens must be a non-negative number");
+  if (!isRatio(s.cacheHitRatio)) return err("session cacheHitRatio must be between 0 and 1");
+  if (!isNonNeg(s.webSearchRequests)) return err("session webSearchRequests must be a non-negative number");
+  if (!isNonNeg(s.webFetchRequests)) return err("session webFetchRequests must be a non-negative number");
   if (!isString(s.serviceTier)) return err("session serviceTier required");
   if (!isString(s.speed)) return err("session speed required");
   if (!isString(s.taskType)) return err("session taskType required");
   if (typeof s.success !== "boolean") return err("session success required");
   if (!isString(s.lastStopReason)) return err("session lastStopReason required");
-  if (!isNum(s.apiErrorCount)) return err("session apiErrorCount required");
-  if (!isNum(s.toolErrorCount)) return err("session toolErrorCount required");
-  if (!isNum(s.toolCallCount)) return err("session toolCallCount required");
+  if (!isNonNeg(s.apiErrorCount)) return err("session apiErrorCount must be a non-negative number");
+  if (!isNonNeg(s.toolErrorCount)) return err("session toolErrorCount must be a non-negative number");
+  if (!isNonNeg(s.toolCallCount)) return err("session toolCallCount must be a non-negative number");
   if (!isStringArray(s.toolsUsed)) return err("session toolsUsed must be string array");
   if (!isToolCalls(s.toolCalls)) return err("session toolCalls invalid");
   if (!isStringArray(s.toolSequence)) return err("session toolSequence must be string array");
-  if (!isNum(s.thinkingBlocks)) return err("session thinkingBlocks required");
-  if (!isNum(s.thinkingChars)) return err("session thinkingChars required");
-  if (!isNum(s.textCharsOut)) return err("session textCharsOut required");
-  if (!isNum(s.userCharsIn)) return err("session userCharsIn required");
+  if (!isNonNeg(s.thinkingBlocks)) return err("session thinkingBlocks must be a non-negative number");
+  if (!isNonNeg(s.thinkingChars)) return err("session thinkingChars must be a non-negative number");
+  if (!isNonNeg(s.textCharsOut)) return err("session textCharsOut must be a non-negative number");
+  if (!isNonNeg(s.userCharsIn)) return err("session userCharsIn must be a non-negative number");
   if (typeof s.isSubagent !== "boolean") return err("session isSubagent required");
   if (!isString(s.cwdHash)) return err("session cwdHash required");
   if (typeof s.hasGit !== "boolean") return err("session hasGit required");
@@ -95,6 +95,9 @@ function parseSession(body: unknown, batchTier: unknown): { ok: true } | { ok: f
     }
   }
 
+  const secretScan = scanPreviewSecrets(s);
+  if (!secretScan.ok) return secretScan;
+
   const extra = Object.keys(s).filter((k) => !(SESSION_KEYS as readonly string[]).includes(k));
   if (extra.length > 0) return err(`session unknown field: ${extra[0]}`);
   return { ok: true };
@@ -108,6 +111,70 @@ function isNum(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
+// Counters feed the earnings estimate and the analytics; negatives corrupt both.
+function isNonNeg(v: unknown): v is number {
+  return isNum(v) && v >= 0;
+}
+
+function isHourOfDay(v: unknown): v is number {
+  return isNum(v) && v >= 0 && v <= 23;
+}
+
+function isDayOfWeek(v: unknown): v is number {
+  return isNum(v) && v >= 0 && v <= 6;
+}
+
+function isRatio(v: unknown): v is number {
+  return isNum(v) && v >= 0 && v <= 1;
+}
+
+// High-confidence credential shapes only, to avoid false positives on code
+// that merely mentions keys. The client scrubs secrets on-device; this is
+// the server-side safety net so a missed secret never lands in the store.
+const SECRET_PATTERNS: Array<{ name: string; re: RegExp }> = [
+  { name: "aws access key", re: /AKIA[0-9A-Z]{16}/ },
+  { name: "private key", re: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/ },
+  { name: "github token", re: /\bghp_[A-Za-z0-9]{36}\b/ },
+  { name: "github token", re: /\bgithub_pat_[A-Za-z0-9_]{22,}\b/ },
+  { name: "slack token", re: /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/ },
+  { name: "anthropic key", re: /\bsk-ant-[A-Za-z0-9\-_]{20,}\b/ },
+];
+
+function findSecret(text: string): string | null {
+  for (const p of SECRET_PATTERNS) {
+    if (p.re.test(text)) return p.name;
+  }
+  return null;
+}
+
+// Scan free-text preview fields for leaked credentials. The error names the
+// field but never echoes the value, so a secret is not bounced back.
+function scanPreviewSecrets(s: Record<string, unknown>): { ok: true } | { ok: false; error: string } {
+  const fields = ["userPromptPreview", "assistantPreview", "thinkingPreview"] as const;
+  for (const field of fields) {
+    const v = s[field];
+    if (typeof v === "string") {
+      const hit = findSecret(v);
+      if (hit) return err(`possible ${hit} in session ${field}; scrub secrets before submitting`);
+    }
+  }
+  const events = s.toolEvents;
+  if (Array.isArray(events)) {
+    for (const item of events) {
+      if (typeof item !== "object" || item === null) continue;
+      const e = item as Record<string, unknown>;
+      for (const field of ["inputPreview", "resultPreview"] as const) {
+        const v = e[field];
+        if (typeof v === "string") {
+          const hit = findSecret(v);
+          if (hit) return err(`possible ${hit} in session toolEvents ${field}; scrub secrets before submitting`);
+        }
+      }
+    }
+  }
+  return { ok: true };
+}
+
 function isStringArray(v: unknown): v is string[] {
   return Array.isArray(v) && v.every((x) => typeof x === "string");
 }
@@ -118,7 +185,7 @@ function isToolCalls(v: unknown): boolean {
     if (typeof item !== "object" || item === null) return false;
     const t = item as Record<string, unknown>;
     const extra = Object.keys(t).filter((k) => !["name", "count", "errors"].includes(k));
-    return extra.length === 0 && typeof t.name === "string" && isNum(t.count) && isNum(t.errors);
+    return extra.length === 0 && typeof t.name === "string" && isNonNeg(t.count) && isNonNeg(t.errors);
   });
 }
 
@@ -128,7 +195,7 @@ function isStopReasons(v: unknown): boolean {
     if (typeof item !== "object" || item === null) return false;
     const t = item as Record<string, unknown>;
     const extra = Object.keys(t).filter((k) => !["reason", "count"].includes(k));
-    return extra.length === 0 && typeof t.reason === "string" && isNum(t.count);
+    return extra.length === 0 && typeof t.reason === "string" && isNonNeg(t.count);
   });
 }
 
