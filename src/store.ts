@@ -17,6 +17,9 @@ export class Store {
     for (const line of readFileSync(this.file, "utf8").split("\n").filter(Boolean)) {
       try {
         const r = JSON.parse(line) as BatchRecord;
+        // Skip corrupt or tampered lines missing a batch id instead of
+        // indexing them under "undefined".
+        if (typeof r.batchId !== "string" || r.batchId.length === 0) continue;
         this.index.set(r.batchId, r);
       } catch {
         // skip corrupt line
@@ -25,8 +28,10 @@ export class Store {
   }
 
   add(record: BatchRecord) {
-    this.index.set(record.batchId, record);
+    // Persist first, then index: if the write throws, the in-memory index
+    // must not claim a batch that is not on disk.
     appendFileSync(this.file, JSON.stringify(record) + "\n");
+    this.index.set(record.batchId, record);
   }
 
   get(id: string): BatchRecord | undefined {
