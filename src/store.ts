@@ -33,6 +33,10 @@ export class Store {
     return this.index.get(id);
   }
 
+  all(): BatchRecord[] {
+    return Array.from(this.index.values());
+  }
+
   count(): number {
     return this.index.size;
   }
