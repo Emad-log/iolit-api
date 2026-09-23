@@ -124,3 +124,70 @@ test("accepts a trace batch with tool events", () => {
   const r = parseBatch(batch({ shareTier: "trace", sessions: [traced] }));
   assert.equal(r.ok, true);
 });
+
+test("rejects negative counters", () => {
+  assert.equal(parseBatch(batch({ sessions: [{ ...session, tokensIn: -5 }] })).ok, false);
+  assert.equal(parseBatch(batch({ sessions: [{ ...session, toolCallCount: -1 }] })).ok, false);
+  assert.equal(
+    parseBatch(batch({ sessions: [{ ...session, toolCalls: [{ name: "Read", count: 1, errors: -2 }] }] })).ok,
+    false,
+  );
+});
+
+test("rejects out-of-range hourOfDay, dayOfWeek, cacheHitRatio", () => {
+  assert.equal(parseBatch(batch({ sessions: [{ ...session, hourOfDay: 24 }] })).ok, false);
+  assert.equal(parseBatch(batch({ sessions: [{ ...session, hourOfDay: -1 }] })).ok, false);
+  assert.equal(parseBatch(batch({ sessions: [{ ...session, dayOfWeek: 7 }] })).ok, false);
+  assert.equal(parseBatch(batch({ sessions: [{ ...session, cacheHitRatio: 1.5 }] })).ok, false);
+});
+
+test("rejects previews containing credential-shaped secrets", () => {
+  const raw: SessionMeta = {
+    ...session,
+    shareTier: "raw",
+    userPromptPreview: "deploy with AKIAIOSFODNN7EXAMPLE key",
+    assistantPreview: "ok",
+    thinkingPreview: "",
+  };
+  const r = parseBatch(batch({ shareTier: "raw", sessions: [raw] }));
+  assert.equal(r.ok, false);
+  assert.match((r as { error: string }).error, /possible aws access key/);
+
+  const pem: SessionMeta = {
+    ...session,
+    shareTier: "raw",
+    userPromptPreview: "-----BEGIN RSA PRIVATE KEY-----\nabc",
+    assistantPreview: "",
+    thinkingPreview: "",
+  };
+  assert.equal(parseBatch(batch({ shareTier: "raw", sessions: [pem] })).ok, false);
+
+  const traced: SessionMeta = {
+    ...session,
+    shareTier: "trace",
+    toolEvents: [
+      {
+        name: "Bash",
+        error: false,
+        exitCode: null,
+        argKeys: [],
+        inputPreview: "export TOKEN=github_pat_abcdefghijklmnopqrstuvwx",
+        resultPreview: "ok",
+      },
+    ],
+  };
+  const t = parseBatch(batch({ shareTier: "trace", sessions: [traced] }));
+  assert.equal(t.ok, false);
+  assert.match((t as { error: string }).error, /possible github token/);
+});
+
+test("accepts raw previews without credential shapes", () => {
+  const raw: SessionMeta = {
+    ...session,
+    shareTier: "raw",
+    userPromptPreview: "fix the login bug in auth.ts",
+    assistantPreview: "changed the token refresh logic",
+    thinkingPreview: "considering edge cases",
+  };
+  assert.equal(parseBatch(batch({ shareTier: "raw", sessions: [raw] })).ok, true);
+});

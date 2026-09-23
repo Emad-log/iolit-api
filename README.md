@@ -12,6 +12,10 @@ The Iolit marketplace API. Receives approved session-metadata batches from the
 ## What the API does with a batch
 
 1. Validates it against the exact client schema. Unknown fields are rejected.
+   Counters must be non-negative (negatives would corrupt the estimate),
+   `hourOfDay`/`dayOfWeek` must be in range, and free-text previews are
+   scanned for high-confidence credential shapes (AWS keys, private keys,
+   GitHub/Slack/Anthropic tokens) and rejected rather than stored.
 2. Verifies provenance: commit SHAs must be well-formed, and any SHA
    already seen in another batch is flagged as a duplicate (the signature
    of copied or farmed sessions). Batches with no commits are stored as
