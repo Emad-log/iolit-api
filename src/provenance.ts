@@ -10,7 +10,7 @@
 // verified = at least one commit was checked and none were duplicates.
 // A batch with no commits is stored honestly as unverified, not rejected.
 
-import type { BatchPayload, BatchRecord, Verification } from "./types.js";
+import type { BatchPayload, Verification } from "./types.js";
 import type { Store } from "./store.js";
 
 export function verifyProvenance(batch: BatchPayload, store: Store): Verification {
@@ -43,9 +43,4 @@ export function verifyProvenance(batch: BatchPayload, store: Store): Verificatio
     duplicateCommits,
     verified: commits.size > 0 && duplicateCommits.length === 0,
   };
-}
-
-/** Re-verify a stored record (e.g. after new batches arrive). */
-export function reverifyRecord(record: BatchRecord, store: Store): Verification {
-  return verifyProvenance(record, store);
 }
