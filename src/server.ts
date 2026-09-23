@@ -5,7 +5,12 @@ import type { Store } from "./store.js";
 import { parseBatch } from "./validate.js";
 import { estimateUsd } from "./pricing.js";
 import { verifyProvenance } from "./provenance.js";
+import { RateLimiter } from "./rate-limit.js";
 import type { BatchRecord } from "./types.js";
+
+const MIN = 60 * 1000;
+const postLimiter = new RateLimiter(Number(process.env.RATE_LIMIT_POST_PER_MIN ?? 30), MIN);
+const getLimiter = new RateLimiter(Number(process.env.RATE_LIMIT_GET_PER_MIN ?? 300), MIN);
 
 export function makeApp(store: Store) {
   return createServer(async (req: IncomingMessage, res: ServerResponse) => {
@@ -18,6 +23,23 @@ export function makeApp(store: Store) {
     }
 
     const url = new URL(req.url ?? "/", "http://localhost");
+    const client = req.socket.remoteAddress ?? "unknown";
+
+    if (req.method === "POST" && url.pathname === "/v1/batches") {
+      const limit = postLimiter.allow(client);
+      if (!limit.ok) {
+        res.setHeader("Retry-After", String(limit.retryAfterSec));
+        json(res, 429, { error: "rate limited" });
+        return;
+      }
+    } else if (req.method === "GET" && url.pathname.startsWith("/v1/batches/")) {
+      const limit = getLimiter.allow(client);
+      if (!limit.ok) {
+        res.setHeader("Retry-After", String(limit.retryAfterSec));
+        json(res, 429, { error: "rate limited" });
+        return;
+      }
+    }
 
     if (req.method === "GET" && url.pathname === "/health") {
       json(res, 200, { ok: true });

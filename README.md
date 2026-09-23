@@ -28,6 +28,13 @@ npm run build
 PORT=8092 DATA_DIR=/opt/iolit-api node dist/main.js
 ```
 
+Environment knobs:
+
+- `MAX_BODY_BYTES` (default 10485760): request body cap, 413 past it
+- `MAX_SESSIONS` (default 5000): sessions per batch cap, 413 past it
+- `RATE_LIMIT_POST_PER_MIN` (default 30): per-IP POST ingest limit, 429 past it
+- `RATE_LIMIT_GET_PER_MIN` (default 300): per-IP batch lookup limit, 429 past it
+
 ## Test
 
 ```sh
