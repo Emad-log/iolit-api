@@ -1,6 +1,7 @@
 // Factory so tests can run without binding a port.
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import type { Store } from "./store.js";
 import { parseBatch } from "./validate.js";
 import { estimateUsd } from "./pricing.js";
@@ -47,6 +48,13 @@ export function makeApp(store: Store) {
     }
 
     if (req.method === "POST" && url.pathname === "/v1/batches") {
+      // Optional shared secret. Unset by default so existing clients keep
+      // working; set IOLIT_API_KEY to lock ingest down. Read per request so
+      // tests (and key rotation) do not need a restart.
+      if (!authorized(req)) {
+        json(res, 401, { error: "unauthorized" });
+        return;
+      }
       const body = await readBody(req);
       if (body === null) {
         json(res, 400, { error: "invalid json" });
@@ -120,6 +128,17 @@ function readBody(req: IncomingMessage): Promise<unknown | null> {
 function json(res: ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(body));
+}
+
+function authorized(req: IncomingMessage): boolean {
+  const key = process.env.IOLIT_API_KEY ?? "";
+  if (!key) return true; // open by default, keeps existing clients working
+  const header = req.headers.authorization ?? "";
+  const space = header.indexOf(" ");
+  if (space < 0 || header.slice(0, space) !== "Bearer") return false;
+  const token = Buffer.from(header.slice(space + 1));
+  const expected = Buffer.from(key);
+  return token.length === expected.length && timingSafeEqual(token, expected);
 }
 
 function setCors(res: ServerResponse) {

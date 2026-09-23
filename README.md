@@ -38,6 +38,9 @@ Environment knobs:
 - `MAX_SESSIONS` (default 5000): sessions per batch cap, 413 past it
 - `RATE_LIMIT_POST_PER_MIN` (default 30): per-IP POST ingest limit, 429 past it
 - `RATE_LIMIT_GET_PER_MIN` (default 300): per-IP batch lookup limit, 429 past it
+- `IOLIT_API_KEY`: when set, `POST /v1/batches` requires
+  `Authorization: Bearer <key>` (constant-time compare); unset by default
+  so existing clients keep working, GETs stay public
 
 ## Test
 
