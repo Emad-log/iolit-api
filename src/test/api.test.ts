@@ -157,3 +157,15 @@ test("GET /v1/batches/:id returns status", async () => {
   await new Promise<void>((r) => server.close(() => r()));
   rmSync(dir, { recursive: true, force: true });
 });
+
+test("store skips corrupt lines and records missing batchId on load", async () => {
+  const { writeFileSync } = await import("node:fs");
+  const { dir, store } = tempStore();
+  store.add(record);
+  writeFileSync(join(dir, "batches.jsonl"), '{"nope":true}\n{"batchId":123}\n', { flag: "a" });
+  const reloaded = new Store(dir);
+  assert.equal(reloaded.count(), 1);
+  assert.equal(reloaded.get("b1")?.batchId, "b1");
+  assert.equal(reloaded.get("undefined"), undefined);
+  rmSync(dir, { recursive: true, force: true });
+});
