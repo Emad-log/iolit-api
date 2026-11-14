@@ -2,11 +2,18 @@
   "name": "iolit-api",
   "version": "0.1.0",
   "description": "Iolit marketplace API - receives approved session-metadata batches",
+  "homepage": "https://iolit.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Emad-log/iolit-api.git"
+  },
+  "author": "Emad",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "node --test dist/test/validate.test.js dist/test/api.test.js dist/test/provenance.test.js dist/test/rate-limit.test.js dist/test/api-key.test.js",
-    "start": "node dist/main.js"
+    "test": "node --test dist/test/*.test.js",
+    "start": "node dist/main.js",
+    "check": "npm run build && npm test"
   },
   "engines": {
     "node": ">=20"

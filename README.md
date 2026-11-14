@@ -1,5 +1,7 @@
 # iolit-api
 
+[![CI](https://github.com/Emad-log/iolit-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Emad-log/iolit-api/actions/workflows/ci.yml)
+
 The Iolit marketplace API. Receives approved session-metadata batches from the
 [iolit-client](https://github.com/Emad-log/iolit-client).
 
@@ -44,10 +46,34 @@ Environment knobs:
 
 ## Test
 
+Node 20 or newer. No runtime dependencies.
+
 ```sh
-npm test
+npm run build
+npm test        # runs against dist/
+npm run check   # both
 ```
+
+## Layout
+
+```
+src/
+  main.ts         reads the environment, starts the server
+  server.ts       routes, body limits, API key check
+  validate.ts     strict schema validation of a batch
+  provenance.ts   commit SHA checks and duplicate detection
+  rate-limit.ts   per-IP limits
+  pricing.ts      the earnings estimate
+  store.ts        append-only JSONL storage
+  types.ts        the wire schema, shared with iolit-client
+  test/           unit and API tests
+```
+
+## Status
+
+Shelved. Iolit was a waitlist for an idea that did not take off. The code
+stays here, building and tested, for anyone who wants to read it.
 
 ## License
 
-MIT
+[MIT](LICENSE)
